@@ -40,7 +40,7 @@ class Capture:
 	def create(self):
 
 		handle = self._k4a.k4a_capture_t
-		self._k4a.VERIFY(Capture._k4a.k4a_capture_create(handle),"Create capture failed!")
+		self._k4a.VERIFY(self._k4a.k4a_capture_create(handle),"Create capture failed!")
 
 		return Capture(handle)
 

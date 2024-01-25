@@ -13,7 +13,7 @@ class Device:
 	def __init__(self, index=0, k4a_dll_obj=None):
 		if k4a_dll_obj is None:
 			self._k4a = k4a_dll()
-			self._k4a.initialize_libraries()
+			self._k4a.setup_library()
 			print(f"[Device] Initialized k4a library {self._k4a}")
 		else:
 			self._k4a = k4a_dll_obj

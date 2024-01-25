@@ -27,7 +27,7 @@ class pykinectclass:
         module_k4arecord_path = get_k4arecord_module_path(module_k4a_path)
 
         # Initialize k4a related wrappers
-        self.init_k4a(module_k4a_path)
+        dll =self.init_k4a(module_k4a_path)
 
         # Initialize k4arecord related wrappers
         self.init_k4arecord(module_k4arecord_path)
@@ -39,6 +39,8 @@ class pykinectclass:
 
             # Initialize k4abt related wrappers
             self.init_k4abt(module_k4abt_path)
+
+        return dll
 
     def init_k4a(self, module_k4a_path):
         self._k4a = k4a_dll()
