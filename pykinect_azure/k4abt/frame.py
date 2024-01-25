@@ -9,7 +9,13 @@ from pykinect_azure.k4a import Image, Capture, Transformation
 from pykinect_azure.k4a._k4atypes import K4A_CALIBRATION_TYPE_DEPTH
 
 class Frame:
-	def __init__(self, frame_handle, calibration):
+	def __init__(self, frame_handle, calibration, k4a_dll_obj=None):
+		if k4a_dll_obj is None:
+			self._k4a = k4a_dll()
+			self._k4a.setup_library()
+			print(f"[Image] Initialized k4a library {self._k4a}")
+		else:
+			self._k4a = k4a_dll_obj
 
 		if frame_handle:
 			self._handle = frame_handle
@@ -99,7 +105,7 @@ class Frame:
 		return _k4abt.k4abt_frame_get_device_timestamp_usec(self._handle)
 
 	def get_body_index_map(self):
-		return Image(_k4abt.k4abt_frame_get_body_index_map(self._handle))
+		return Image(_k4abt.k4abt_frame_get_body_index_map(self._handle), self._k4a)
 
 	def get_body_index_map_image(self):
 		return self.get_body_index_map().to_numpy()

@@ -1,13 +1,19 @@
 import cv2 
 
-from pykinect_azure.k4a import _k4a
 from pykinect_azure.k4a.image import Image
 from pykinect_azure.k4a.transformation import Transformation
 from pykinect_azure.utils.postProcessing import smooth_depth_image
+from pykinect_azure.k4a._k4atypes import K4A_CALIBRATION_TYPE_DEPTH
 
 class Capture:
 
-	def __init__(self, capture_handle, calibration):
+	def __init__(self, capture_handle, calibration, k4a_dll=None):
+		if k4a_dll is None:
+			self._k4a = k4a_dll()
+			self._k4a.initialize_libraries()
+			print(f"[Capture] Initialized k4a library {self._k4a}")
+		else:
+			self._k4a = k4a_dll
 
 		self._handle = capture_handle
 		self.calibration = calibration
@@ -29,27 +35,26 @@ class Capture:
 
 	def release_handle(self):
 		if self.is_valid():
-			_k4a.k4a_capture_release(self._handle)
+			self._k4a.k4a_capture_release(self._handle)
 
-	@staticmethod
-	def create():
+	def create(self):
 
-		handle = _k4a.k4a_capture_t
-		_k4a.VERIFY(Capture._k4a.k4a_capture_create(handle),"Create capture failed!")
+		handle = self._k4a.k4a_capture_t
+		self._k4a.VERIFY(Capture._k4a.k4a_capture_create(handle),"Create capture failed!")
 
 		return Capture(handle)
 
 	def get_color_image_object(self):
 		
-		return Image(_k4a.k4a_capture_get_color_image(self._handle))
+		return Image(self._k4a.k4a_capture_get_color_image(self._handle), self._k4a)
 
 	def get_depth_image_object(self):
 
-		return Image(_k4a.k4a_capture_get_depth_image(self._handle))
+		return Image(self._k4a.k4a_capture_get_depth_image(self._handle), self._k4a)
 
 	def get_ir_image_object(self):
 
-		return Image(_k4a.k4a_capture_get_ir_image(self._handle))
+		return Image(self._k4a.k4a_capture_get_ir_image(self._handle), self._k4a)
 
 	def get_transformed_depth_object(self):
 		return self.camera_transform.depth_image_to_color_camera(self.get_depth_image_object())
@@ -57,11 +62,11 @@ class Capture:
 	def get_transformed_color_object(self):
 		return self.camera_transform.color_image_to_depth_camera(self.get_depth_image_object(),self.get_color_image_object())
 
-	def get_pointcloud_object(self, calibration_type = _k4a.K4A_CALIBRATION_TYPE_DEPTH):
+	def get_pointcloud_object(self, calibration_type = K4A_CALIBRATION_TYPE_DEPTH):
 		return self.camera_transform.depth_image_to_point_cloud(self.get_depth_image_object(), calibration_type)
 
 	def get_transformed_pointcloud_object(self):
-		return self.camera_transform.depth_image_to_point_cloud(self.get_transformed_depth_object(), _k4a.K4A_CALIBRATION_TYPE_COLOR)
+		return self.camera_transform.depth_image_to_point_cloud(self.get_transformed_depth_object(), self._k4a.K4A_CALIBRATION_TYPE_COLOR)
 
 	def get_color_image(self):
 		return self.get_color_image_object().to_numpy()
@@ -99,7 +104,7 @@ class Capture:
 		ret, smooth_depth_image = self.get_smooth_depth_image(maximum_hole_size)
 		return ret, self.color_depth_image(smooth_depth_image)
 
-	def get_pointcloud(self, calibration_type = _k4a.K4A_CALIBRATION_TYPE_DEPTH):
+	def get_pointcloud(self, calibration_type = K4A_CALIBRATION_TYPE_DEPTH):
 		ret, points = self.get_pointcloud_object(calibration_type).to_numpy()
 		points = points.reshape((-1, 3))
 		return ret, points

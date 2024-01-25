@@ -1,11 +1,16 @@
 import ctypes
 
-from pykinect_azure.k4a import _k4a
 
 
 class Calibration:
 
-    def __init__(self, calibration_handle: _k4a.k4a_calibration_t):
+    def __init__(self, calibration_handle, k4a_dll=None):
+        if k4a_dll is None:
+            self._k4a = k4a_dll()
+            self._k4a.initialize_libraries()
+            print(f"[Calibration] Initialized k4a library {self._k4a}")
+        else:
+            self._k4a = k4a_dll
 
         self._handle = calibration_handle
         self.color_params = self._handle.color_camera_calibration.intrinsics.parameters.param
@@ -37,12 +42,12 @@ class Calibration:
         )
         return message
 
-    def get_matrix(self, camera: _k4a.k4a_calibration_type_t):
-        if camera == _k4a.K4A_CALIBRATION_TYPE_COLOR:
+    def get_matrix(self, camera):
+        if camera == self._k4a.K4A_CALIBRATION_TYPE_COLOR:
             return [[self.color_params.fx, 0, self.color_params.cx],
                     [0, self.color_params.fy, self.color_params.cy],
                     [0, 0, 1]]
-        elif camera == _k4a.K4A_CALIBRATION_TYPE_DEPTH:
+        elif camera == self._k4a.K4A_CALIBRATION_TYPE_DEPTH:
             return [[self.depth_params.fx, 0, self.depth_params.cx],
                     [0, self.depth_params.fy, self.depth_params.cy],
                     [0, 0, 1]]
@@ -57,67 +62,64 @@ class Calibration:
         if self.is_valid():
             self._handle = None
 
-    def convert_3d_to_3d(self, source_point3d: _k4a.k4a_float3_t(),
-                         source_camera: _k4a.k4a_calibration_type_t,
-                         target_camera: _k4a.k4a_calibration_type_t) -> _k4a.k4a_float3_t():
+    def convert_3d_to_3d(self, source_point3d,
+                         source_camera,
+                         target_camera):
 
-        target_point3d = _k4a.k4a_float3_t()
+        target_point3d = self._k4a.k4a_float3_t()
 
-        _k4a.VERIFY(
-            _k4a.k4a_calibration_3d_to_3d(self._handle, source_point3d, source_camera, target_camera, target_point3d),
+        self._k4a.VERIFY(
+            self._k4a.k4a_calibration_3d_to_3d(self._handle, source_point3d, source_camera, target_camera, target_point3d),
             "Failed to convert from 3D to 3D")
 
         return target_point3d
 
-    def convert_2d_to_3d(self, source_point2d: _k4a.k4a_float2_t,
-                         source_depth: float,
-                         source_camera: _k4a.k4a_calibration_type_t,
-                         target_camera: _k4a.k4a_calibration_type_t) -> _k4a.k4a_float3_t():
+    def convert_2d_to_3d(self, source_point2d, source_depth: float, source_camera, target_camera):
 
-        target_point3d = _k4a.k4a_float3_t()
+        target_point3d = self._k4a.k4a_float3_t()
         valid = ctypes.c_int()
 
-        _k4a.VERIFY(
-            _k4a.k4a_calibration_2d_to_3d(self._handle, source_point2d, source_depth, source_camera, target_camera,
+        self._k4a.VERIFY(
+            self._k4a.k4a_calibration_2d_to_3d(self._handle, source_point2d, source_depth, source_camera, target_camera,
                                           target_point3d, valid), "Failed to convert from 2D to 3D")
 
         return target_point3d
 
-    def convert_3d_to_2d(self, source_point3d: _k4a.k4a_float3_t,
-                         source_camera: _k4a.k4a_calibration_type_t,
-                         target_camera: _k4a.k4a_calibration_type_t) -> _k4a.k4a_float2_t():
+    def convert_3d_to_2d(self, source_point3d,
+                         source_camera,
+                         target_camera):
 
-        target_point2d = _k4a.k4a_float2_t()
+        target_point2d = self._k4a.k4a_float2_t()
         valid = ctypes.c_int()
 
-        _k4a.VERIFY(
-            _k4a.k4a_calibration_3d_to_2d(self._handle, source_point3d, source_camera, target_camera, target_point2d,
+        self._k4a.VERIFY(
+            self._k4a.k4a_calibration_3d_to_2d(self._handle, source_point3d, source_camera, target_camera, target_point2d,
                                           valid), "Failed to convert from 3D to 2D")
 
         return target_point2d
 
-    def convert_2d_to_2d(self, source_point2d: _k4a.k4a_float2_t,
+    def convert_2d_to_2d(self, source_point2d,
                          source_depth: float,
-                         source_camera: _k4a.k4a_calibration_type_t,
-                         target_camera: _k4a.k4a_calibration_type_t) -> _k4a.k4a_float2_t():
+                         source_camera,
+                         target_camera):
 
-        target_point2d = _k4a.k4a_float2_t()
+        target_point2d = self._k4a.k4a_float2_t()
         valid = ctypes.c_int()
 
-        _k4a.VERIFY(
-            _k4a.k4a_calibration_2d_to_2d(self._handle, source_point2d, source_depth, source_camera, target_camera,
+        self._k4a.VERIFY(
+            self._k4a.k4a_calibration_2d_to_2d(self._handle, source_point2d, source_depth, source_camera, target_camera,
                                           target_point2d, valid), "Failed to convert from 2D to 2D")
 
         return target_point2d
 
-    def convert_color_2d_to_depth_2d(self, source_point2d: _k4a.k4a_float2_t,
-                                     depth_image: _k4a.k4a_image_t) -> _k4a.k4a_float2_t():
+    def convert_color_2d_to_depth_2d(self, source_point2d,
+                                     depth_image):
 
-        target_point2d = _k4a.k4a_float2_t()
+        target_point2d = self._k4a.k4a_float2_t()
         valid = ctypes.c_int()
 
-        _k4a.VERIFY(
-            _k4a.k4a_calibration_color_2d_to_depth_2d(self._handle, source_point2d, depth_image, target_point2d,
+        self._k4a.VERIFY(
+            self._k4a.k4a_calibration_color_2d_to_depth_2d(self._handle, source_point2d, depth_image, target_point2d,
                                                            valid), "Failed to convert from Color 2D to Depth 2D")
 
         return target_point2d

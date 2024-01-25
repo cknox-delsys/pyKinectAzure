@@ -1,8 +1,15 @@
-from pykinect_azure.k4a import _k4a
+# from pykinect_azure.k4a import self._k4a
+from pykinect_azure.k4a._k4a import k4a_dll
 
 class Configuration:
 
-	def __init__(self, configuration_handle=None):
+	def __init__(self, configuration_handle=None, k4a_dll_obj=None):
+		if k4a_dll_obj is None:
+			self._k4a = k4a_dll()
+			self._k4a.setup_library()
+			print(f"[Capture] Initialized k4a library {self._k4a}")
+		else:
+			self._k4a = k4a_dll
 
 		if configuration_handle:
 			self._handle = configuration_handle
@@ -44,13 +51,13 @@ class Configuration:
 		return message
 
 	def create(self):
-		self.color_format = _k4a.K4A_IMAGE_FORMAT_COLOR_MJPG
-		self.color_resolution = _k4a.K4A_COLOR_RESOLUTION_720P
-		self.depth_mode = _k4a.K4A_DEPTH_MODE_WFOV_2X2BINNED
-		self.camera_fps = _k4a.K4A_FRAMES_PER_SECOND_30
+		self.color_format = self._k4a.K4A_IMAGE_FORMAT_COLOR_MJPG
+		self.color_resolution = self._k4a.K4A_COLOR_RESOLUTION_720P
+		self.depth_mode = self._k4a.K4A_DEPTH_MODE_WFOV_2X2BINNED
+		self.camera_fps = self._k4a.K4A_FRAMES_PER_SECOND_30
 		self.synchronized_images_only = False
 		self.depth_delay_off_color_usec = 0
-		self.wired_sync_mode = _k4a.K4A_WIRED_SYNC_MODE_STANDALONE
+		self.wired_sync_mode = self._k4a.K4A_WIRED_SYNC_MODE_STANDALONE
 		self.subordinate_delay_off_master_usec = 0
 		self.disable_streaming_indicator = False
 
@@ -70,7 +77,7 @@ class Configuration:
 		self._handle = configuration_handle
 
 	def on_value_change(self):
-		self._handle = _k4a.k4a_device_configuration_t(self.color_format, \
+		self._handle = self._k4a.k4a_device_configuration_t(self.color_format, \
 											self.color_resolution,\
 											self.depth_mode,\
 											self.camera_fps,\

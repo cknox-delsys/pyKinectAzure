@@ -1,13 +1,19 @@
 import numpy as np
 import cv2
 
-from pykinect_azure.k4a import _k4a
+from pykinect_azure.k4a._k4a import k4a_dll
 
 class Image:
 	_handle = None
 	buffer_pointer = None
 
-	def __init__(self, image_handle=None):
+	def __init__(self, image_handle=None, k4a_dll_obj=None):
+		if k4a_dll_obj is None:
+			self._k4a = k4a_dll()
+			self._k4a.setup_library()
+			print(f"[Image] Initialized k4a library {self._k4a}")
+		else:
+			self._k4a = k4a_dll_obj
 
 		self._handle = image_handle
 		# Get the pointer to the buffer containing the image data
@@ -25,15 +31,14 @@ class Image:
 
 	def reset(self):
 		if self.is_valid():
-			_k4a.k4a_image_release(self._handle)
+			self._k4a.k4a_image_release(self._handle)
 			self._handle = None
 
-	@staticmethod
-	def create(image_format,width_pixels,height_pixels,stride_bytes):
-		handle = _k4a.k4a_image_t()
-		_k4a.VERIFY(_k4a.k4a_image_create(image_format,width_pixels,height_pixels,stride_bytes,handle),"Create image failed!")
+	def create(self, image_format,width_pixels,height_pixels,stride_bytes):
+		handle = self._k4a.k4a_image_t()
+		self._k4a.VERIFY(self._k4a.k4a_image_create(image_format,width_pixels,height_pixels,stride_bytes,handle),"Create image failed!")
 
-		return Image(handle)
+		return Image(handle, self._k4a)
 
 	@property
 	def width(self):
@@ -60,34 +65,34 @@ class Image:
 		if not self._handle:
 			return None
 
-		return _k4a.k4a_image_get_buffer(self._handle)
+		return self._k4a.k4a_image_get_buffer(self._handle)
 		
 	def get_size(self):
 		if not self.is_valid():
 			return None
 
-		return int(_k4a.k4a_image_get_size(self._handle))
+		return int(self._k4a.k4a_image_get_size(self._handle))
 
 	def get_format(self):
 		if not self.is_valid():
 			return None
 
-		return int(_k4a.k4a_image_get_format(self._handle))
+		return int(self._k4a.k4a_image_get_format(self._handle))
 
 	def get_width_pixels(self):
 		if not self.is_valid():
 			return None
 
-		return int(_k4a.k4a_image_get_width_pixels(self._handle))
+		return int(self._k4a.k4a_image_get_width_pixels(self._handle))
 
 	def get_height_pixels(self):
 		if not self.is_valid():
 			return None
 
-		return int(_k4a.k4a_image_get_height_pixels(self._handle))
+		return int(self._k4a.k4a_image_get_height_pixels(self._handle))
 
 	def get_stride_bytes(self):
-		return int(_k4a.k4a_image_get_stride_bytes(self._handle))
+		return int(self._k4a.k4a_image_get_stride_bytes(self._handle))
 
 	def to_numpy(self):
 
@@ -106,23 +111,23 @@ class Image:
 		buffer_array = np.ctypeslib.as_array(self.buffer_pointer,shape=(image_size,))
 
 		# Parse buffer based on image formats
-		if image_format == _k4a.K4A_IMAGE_FORMAT_COLOR_MJPG:
+		if image_format == self._k4a.K4A_IMAGE_FORMAT_COLOR_MJPG:
 			return True, cv2.imdecode(np.frombuffer(buffer_array, dtype=np.uint8).copy(), -1)
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_COLOR_NV12:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_COLOR_NV12:
 			yuv_image = np.frombuffer(buffer_array, dtype=np.uint8).copy().reshape(int(image_height*1.5),image_width)
 			return True, cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_NV12)
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_COLOR_YUY2:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_COLOR_YUY2:
 			yuv_image = np.frombuffer(buffer_array, dtype=np.uint8).copy().reshape(image_height,image_width,2)
 			return True, cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_YUY2)
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_COLOR_BGRA32:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_COLOR_BGRA32:
 			return True, np.frombuffer(buffer_array, dtype=np.uint8).copy().reshape(image_height,image_width,4)
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_DEPTH16:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_DEPTH16:
 			return True, np.frombuffer(buffer_array, dtype="<u2").copy().reshape(image_height,image_width)#little-endian 16 bits unsigned Depth data
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_IR16:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_IR16:
 			return True, np.frombuffer(buffer_array, dtype="<u2").copy().reshape(image_height,image_width)#little-endian 16 bits unsigned IR data. For more details see: https://microsoft.github.io/Azure-Kinect-Sensor-SDK/release/1.2.x/namespace_microsoft_1_1_azure_1_1_kinect_1_1_sensor_a7a3cb7a0a3073650bf17c2fef2bfbd1b.html
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_CUSTOM8:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_CUSTOM8:
 			return True, np.frombuffer(buffer_array, dtype="<u1").copy().reshape(image_height,image_width)
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_CUSTOM16:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_CUSTOM16:
 			return True, np.frombuffer(buffer_array, dtype="<u2").copy().reshape(image_height,image_width)
-		elif image_format == _k4a.K4A_IMAGE_FORMAT_CUSTOM:
+		elif image_format == self._k4a.K4A_IMAGE_FORMAT_CUSTOM:
 			return True, np.frombuffer(buffer_array, dtype="<i2").copy()
