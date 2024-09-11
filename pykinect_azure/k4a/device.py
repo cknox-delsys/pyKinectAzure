@@ -14,7 +14,7 @@ class Device:
 		if k4a_dll_obj is None:
 			self._k4a = k4a_dll()
 			self._k4a.setup_library()
-			print(f"[Device] Initialized k4a library {self._k4a}")
+			# print(f"[Device] Initialized k4a library {self._k4a}")
 		else:
 			self._k4a = k4a_dll_obj
 
@@ -166,4 +166,19 @@ class Device:
 
 	def device_get_installed_count(self):
 		return int(self._k4a.k4a_device_get_installed_count())
+	
+	def is_sync_in_connected(self):
+		sync_in_bool = ctypes.c_bool()
+		sync_out_bool = ctypes.c_bool()
+
+		self._k4a.VERIFY(self._k4a.k4a_device_get_sync_jack(self._handle, sync_in_bool, sync_out_bool), "Sync connection check failed!")
+
+		return sync_in_bool.value
+	
+	def is_sync_out_connected(self):
+		sync_in_bool = ctypes.c_bool()
+		sync_out_bool = ctypes.c_bool()
+
+		self._k4a.VERIFY(self._k4a.k4a_device_get_sync_jack(self._handle, sync_in_bool, sync_out_bool), "Sync connection check failed!")
+		return sync_out_bool.value
 
