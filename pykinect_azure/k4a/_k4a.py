@@ -802,8 +802,9 @@ class k4a_dll:
         
     def VERIFY(self, result, error):
         if result != K4A_RESULT_SUCCEEDED:
-            print(error)
+            # print(error)
             # traceback.print_stack()
-            sys.exit(1)
+            # sys.exit(1)
+            raise Exception(error)
 
 k4a_dll_impl = k4a_dll()
