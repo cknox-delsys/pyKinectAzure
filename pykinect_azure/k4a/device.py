@@ -63,7 +63,10 @@ class Device:
 
 	def update(self, timeout_in_ms=K4A_WAIT_INFINITE):
 		# Get cameras capture
-		capture_handle = self.get_capture(timeout_in_ms)
+		try:
+			capture_handle = self.get_capture(timeout_in_ms)
+		except Exception as e:
+			raise e
 
 		if self.is_capture_initialized():
 			self.capture._handle = capture_handle
