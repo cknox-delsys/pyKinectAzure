@@ -43,8 +43,11 @@ class Device:
 
 	def start(self, configuration, record=False, record_filepath="output.mkv"):
 		self.configuration = configuration
-		self.start_cameras(configuration)
-		self.start_imu()
+		try:
+			self.start_cameras(configuration)
+			self.start_imu()
+		except Exception as e:
+			raise e
 
 		if record:
 			self.record = Record(self._handle, self.configuration.handle(), record_filepath)
